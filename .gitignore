@@ -1,0 +1,9 @@
+venv/
+.env
+__pycache__/
+*.pyc
+data/synthea_raw/
+logs/runs/
+.ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/
