@@ -2,7 +2,7 @@ venv/
 .env
 __pycache__/
 *.pyc
-data/synthea_raw/
+data/
 logs/runs/
 .ipynb_checkpoints/
 *.egg-info/

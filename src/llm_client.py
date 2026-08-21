@@ -9,6 +9,7 @@ breakdown can prove it was worth doing.
 """
 
 import os
+import time
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -23,21 +24,32 @@ MODEL_REASONING = "claude-sonnet-4-6"
 MODEL_LIGHT = "claude-haiku-4-5-20251001"
 
 
-def call_llm(messages: list[dict], model: str = MODEL_REASONING, tools: list[dict] | None = None, max_tokens: int = 1024):
+def call_llm(
+    messages: list[dict],
+    model: str = MODEL_REASONING,
+    tools: list[dict] | None = None,
+    system: str | None = None,
+    max_tokens: int = 1024,
+):
     """
     I call the Anthropic API here and return both the response and a
     metadata dict containing latency_ms and cost_usd, so the caller can log
-    both without recomputing anything.
+    both without recomputing anything. I accept an optional system prompt
+    since my agent loops need to set persona and behavior instructions
+    separately from the conversation messages.
     """
-    import time
     start = time.perf_counter()
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=messages,
-        tools=tools or [],
-    )
+    kwargs = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": messages,
+        "tools": tools or [],
+    }
+    if system:
+        kwargs["system"] = system
+
+    response = client.messages.create(**kwargs)
 
     elapsed_ms = (time.perf_counter() - start) * 1000
 
