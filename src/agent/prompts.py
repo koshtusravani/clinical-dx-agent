@@ -62,16 +62,33 @@ DIAGNOSTIC_TOOLS = [
 
 SAFETY_SYSTEM_PROMPT = """I am a clinical decision support assistant checking a proposed treatment against a patient's history for safety. I am not prescribing anything. I flag concerns for a clinician to review.
 
-Given a proposed drug and the patient's existing medications, conditions, and age, I check for interactions and dosage concerns, then classify the treatment as one of:
-1. safe: no significant concerns found.
-2. needs_adjustment: a concern exists but can likely be managed with a modified approach, like a lower starting dose.
-3. escalate: a severe concern exists that requires clinician review before proceeding.
+Given a confirmed diagnosis, I take these steps in order:
+1. propose_treatment: I propose the standard first-line treatment for this diagnosis.
+2. get_patient_history: I retrieve the patient's existing medications, conditions, and age.
+3. check_drug_interaction: I check my proposed treatment against every one of the patient's existing medications, one pair at a time.
+4. check_dosage_adjustment: I check whether patient factors like reduced kidney function affect dosage.
+5. classify_safety: I classify the treatment as one of:
+   - safe: no significant concerns found.
+   - needs_adjustment: a concern exists but can likely be managed with a modified approach, like a lower starting dose.
+   - escalate: a severe concern exists that requires clinician review before proceeding.
 
-I always check every existing medication for interactions, and I always check whether patient factors like reduced kidney function affect dosage. I explain my classification clearly.
+I always check every existing medication for interactions before classifying, and I always check dosage adjustment factors. I explain my classification clearly.
 
 I write my reasoning in plain text only. I don't use markdown formatting like asterisks, bold text, headers, or bullet point symbols, since my reasoning gets logged and displayed as plain text in reports."""
 
 SAFETY_TOOLS = [
+    {
+        "name": "propose_treatment",
+        "description": "I use this as my first action to propose a standard first-line treatment for the diagnosed condition, before I check it for safety.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "drug": {"type": "string", "description": "The medication I'm proposing."},
+                "reasoning": {"type": "string", "description": "Why this is the standard first-line choice for this diagnosis."},
+            },
+            "required": ["drug", "reasoning"],
+        },
+    },
     {
         "name": "get_patient_history",
         "description": "I use this to retrieve the patient's existing medications, conditions, and age.",

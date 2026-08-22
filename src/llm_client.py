@@ -29,6 +29,7 @@ def call_llm(
     model: str = MODEL_REASONING,
     tools: list[dict] | None = None,
     system: str | None = None,
+    tool_choice: dict | None = None,
     max_tokens: int = 1024,
 ):
     """
@@ -48,6 +49,8 @@ def call_llm(
     }
     if system:
         kwargs["system"] = system
+    if tool_choice:
+        kwargs["tool_choice"] = tool_choice
 
     response = client.messages.create(**kwargs)
 

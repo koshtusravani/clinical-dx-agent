@@ -71,6 +71,7 @@ def run_diagnostic_loop(patient_id: str, presenting_symptoms: list[str]) -> Agen
             model=MODEL_REASONING,
             tools=DIAGNOSTIC_TOOLS,
             system=DIAGNOSTIC_SYSTEM_PROMPT,
+            tool_choice={"type": "any"},
         )
 
         messages.append({"role": "assistant", "content": response.content})
