@@ -11,7 +11,6 @@ toward, which is a more honest efficiency metric than a single fixed cap.
 # conditions to my v1 scope.
 STEP_BUDGET_BY_CONDITION = {
     "Type 2 Diabetes Mellitus": 2,   # fasting glucose + hba1c usually confirms it
-    "Hypothyroidism": 2,             # tsh + a confirmatory free t4 usually confirms it
     "Anemia": 2,                     # cbc + a follow up like ferritin
     "Hypertension": 1,               # often confirmed by vitals alone plus history
     "Urinary Tract Infection": 2,    # urinalysis + culture

@@ -40,8 +40,11 @@ TEST_NAME_MAP = {
     "fasting_glucose": "Glucose",
     "hba1c": "Hemoglobin A1c/Hemoglobin.total in Blood",
     "cbc": "Hemoglobin [Mass/volume] in Blood",
-    "tsh": "Thyrotropin [Units/volume] in Serum or Plasma",
     "creatinine": "Creatinine [Mass/volume] in Serum or Plasma",
+    "cholesterol_total": "Cholesterol [Mass/volume] in Serum or Plasma",
+    "cholesterol_ldl": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay",
+    "urine_leukocyte_esterase": "Leukocyte esterase [Presence] in Urine by Test strip",
+    "urine_nitrite": "Nitrite [Presence] in Urine by Test strip",
 }
 
 
@@ -49,6 +52,33 @@ def _calc_age(birth_date_str: str) -> int:
     birth = date.fromisoformat(birth_date_str)
     today = date.today()
     return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+
+# I map the condition names I care about to how they're likely to appear in
+# Synthea's Condition.code.text. I search for these explicitly instead of
+# trusting the first Condition resource, since Synthea logs many
+# administrative and social findings as Condition resources too.
+TARGET_CONDITIONS = {
+    "Type 2 Diabetes Mellitus": ["diabetes"],
+    "Anemia": ["anemia"],
+    "Hypertension": ["hypertension"],
+    "Urinary Tract Infection": ["urinary tract infection"],
+    "Hyperlipidemia": ["hyperlipidemia"],
+}
+
+
+def _find_target_condition(condition_names: list[str]) -> str | None:
+    """
+    I search a patient's full condition list for anything matching one of
+    my target diagnoses. I return the first match, or None if this patient
+    doesn't have any of the conditions in my v1 scope.
+    """
+    lowered = [c.lower() for c in condition_names]
+    for target_condition, keywords in TARGET_CONDITIONS.items():
+        for keyword in keywords:
+            if any(keyword in c for c in lowered):
+                return target_condition
+    return None
 
 
 def flatten_bundle(bundle: dict) -> dict:
@@ -85,12 +115,8 @@ def flatten_bundle(bundle: dict) -> dict:
         "conditions": condition_names,
         "medications": medication_names,
         "observations": obs_by_test,
-        # I naively take the first condition as ground truth for now. I'll
-        # curate this by hand for my actual gold set rather than trust it
-        # blindly, since Synthea patients often have many conditions.
-        "ground_truth_condition": condition_names[0] if condition_names else None,
+        "ground_truth_condition": _find_target_condition(condition_names),
     }
-
 
 def flatten_all():
     bundles = list_raw_bundles()
