@@ -24,7 +24,7 @@ DIAGNOSTIC_TOOLS = [
             "properties": {
                 "test_name": {
                     "type": "string",
-                    "description": "The test I want to order, for example fasting_glucose, hba1c, cbc, tsh, or creatinine.",
+                    "description": "The test I want to order. Available tests: fasting_glucose, hba1c, cbc, creatinine, cholesterol_total, cholesterol_ldl, urine_leukocyte_esterase, urine_nitrite.",
                 },
                 "reasoning": {
                     "type": "string",

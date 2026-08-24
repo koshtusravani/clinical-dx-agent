@@ -21,7 +21,16 @@ from src.agent.diagnostic_loop import _strip_markdown
 # I cap the safety loop at a slightly higher step budget than a single
 # diagnostic condition, since it has more mandatory sub-steps: propose,
 # get history, check every existing medication, check dosage, classify.
-SAFETY_STEP_BUDGET = 8
+# I calculate the safety budget dynamically based on how many medications
+# a patient is actually on, since real patients can have many concurrent
+# medications and my agent checks each one individually for interactions.
+# A fixed budget was too small for patients with several medications.
+BASE_SAFETY_STEPS = 4  # propose_treatment, get_patient_history, check_dosage_adjustment, classify_safety
+SAFETY_STEP_HEADROOM = 2  # a little slack for retries or an extra look-back
+
+
+def _calculate_safety_budget(num_medications: int) -> int:
+    return BASE_SAFETY_STEPS + num_medications + SAFETY_STEP_HEADROOM
 
 TOOL_FUNCTIONS = {
     "get_patient_history": get_patient_history,
@@ -76,8 +85,12 @@ def run_safety_loop(state: AgentState) -> AgentState:
     """
     messages = []
     step_num = len(state.steps_taken)
-    steps_remaining = SAFETY_STEP_BUDGET
     patient_history = None
+
+    # I don't know the patient's medication count until I fetch their
+    # history, so I start with a conservative default budget and recompute
+    # it dynamically the moment I know how many medications there are.
+    steps_remaining = BASE_SAFETY_STEPS + SAFETY_STEP_HEADROOM
 
     while steps_remaining > 0 and state.phase == "treatment_safety":
         step_num += 1
@@ -89,7 +102,7 @@ def run_safety_loop(state: AgentState) -> AgentState:
             model=MODEL_REASONING,
             tools=SAFETY_TOOLS,
             system=SAFETY_SYSTEM_PROMPT,
-            tool_choice={"type": "any"},
+            tool_choice={"type": "any", "disable_parallel_tool_use": True},
         )
 
         messages.append({"role": "assistant", "content": response.content})
@@ -152,6 +165,12 @@ def run_safety_loop(state: AgentState) -> AgentState:
 
                 if action == "get_patient_history":
                     patient_history = result
+                    num_meds = len(result.get("medications", []))
+                    recalculated_budget = _calculate_safety_budget(num_meds)
+                    # I only ever expand the budget here, never shrink it, so
+                    # I don't accidentally cut off a run that already has
+                    # steps in progress.
+                    steps_remaining = max(steps_remaining, recalculated_budget - step_num)
                 
                 # I flag severe interactions immediately as a safety net,
                 # even if the agent doesn't classify it that way itself,
