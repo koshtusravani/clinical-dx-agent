@@ -80,6 +80,31 @@ def _find_target_condition(condition_names: list[str]) -> str | None:
                 return target_condition
     return None
 
+def _extract_observation_value(obs: dict, date_str: str | None) -> dict:
+    """
+    I extract a usable value from a FHIR Observation, handling both numeric
+    lab results (valueQuantity, like glucose or hemoglobin) and
+    presence/absence test strip results (valueCodeableConcept, like
+    leukocyte esterase or nitrite), since Synthea represents these two
+    kinds of results differently.
+    """
+    if "valueQuantity" in obs:
+        vq = obs["valueQuantity"]
+        return {
+            "value": vq.get("value"),
+            "unit": vq.get("unit"),
+            "date": date_str,
+        }
+
+    if "valueCodeableConcept" in obs:
+        vcc = obs["valueCodeableConcept"]
+        return {
+            "value": vcc.get("text"),
+            "unit": None,
+            "date": date_str,
+        }
+
+    return {"value": None, "unit": None, "date": date_str}
 
 def flatten_bundle(bundle: dict) -> dict:
     patients = extract_resources(bundle, "Patient")
@@ -94,14 +119,9 @@ def flatten_bundle(bundle: dict) -> dict:
     obs_by_test = {}
     for obs in observations:
         text = obs.get("code", {}).get("text", "")
-        value = obs.get("valueQuantity", {})
         for friendly_name, loinc_text in TEST_NAME_MAP.items():
             if loinc_text.lower() in text.lower():
-                obs_by_test[friendly_name] = {
-                    "value": value.get("value"),
-                    "unit": value.get("unit"),
-                    "date": obs.get("effectiveDateTime"),
-                }
+                obs_by_test[friendly_name] = _extract_observation_value(obs, obs.get("effectiveDateTime"))
 
     condition_names = [c.get("code", {}).get("text", "Unknown condition") for c in conditions]
     medication_names = [
