@@ -1,9 +1,24 @@
+# Environment and secrets
 venv/
 .env
+
+# Python
 __pycache__/
 *.pyc
-data/
-logs/runs/
-.ipynb_checkpoints/
 *.egg-info/
 .pytest_cache/
+
+# Data (bulk/generated, kept local only — see README for reproduction steps)
+data/
+logs/runs/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
