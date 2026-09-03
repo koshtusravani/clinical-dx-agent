@@ -72,7 +72,17 @@ Average $0.19 and 36.5 seconds per full case (diagnosis plus safety check) acros
 
 ## Stack
 
-Python, Anthropic Claude API (native tool use, no agent framework), FastAPI (planned for the demo API layer), Gradio (planned for the live demo UI), Synthea for synthetic patient generation, SQLite for run logging (planned).
+Python, Anthropic Claude API (native tool use, no agent framework), FastAPI, Gradio, Synthea for synthetic patient generation.
+
+## API
+
+A small FastAPI layer exposes the agent over HTTP:
+
+- `POST /diagnose` — runs the full diagnostic and safety pipeline for a patient, returns the final outcome plus every step's trace
+- `GET /cases/{patient_id}` — inspect a processed case's raw data
+- `GET /health` — liveness check
+
+Run locally with `uvicorn src.api.main:app --reload`, then see interactive docs at `http://127.0.0.1:8000/docs`.
 
 I chose not to use LangChain or a similar framework. Hand rolling the loop, retry logic, and state machine keeps the internals fully visible and was a deliberate choice to demonstrate understanding of agent mechanics directly, not just framework usage.
 
