@@ -119,7 +119,7 @@ def _condition_matches(predicted: str, ground_truth: str) -> bool:
     return any(term in predicted_lower for term in terms)
 
 
-def run_eval(limit_per_condition: int | None = None) -> list[dict]:
+def run_eval(limit_per_condition: int | None = None, save_incrementally: bool = True) -> list[dict]:
     gold_set = load_gold_set()
     results = []
 
@@ -133,7 +133,11 @@ def run_eval(limit_per_condition: int | None = None) -> list[dict]:
             results.append(result)
 
             status = "OK" if result["diagnosis_correct"] else ("ESCALATED" if result["escalated"] else "MISS")
-            print(status)
+            cost_so_far = sum(r["total_cost_usd"] for r in results)
+            print(f"{status}  (running total: ${cost_so_far:.2f})")
+
+            if save_incrementally:
+                save_results(results, filename="eval_run_results_in_progress.json")
 
     return results
 
@@ -153,4 +157,12 @@ if __name__ == "__main__":
     results = run_eval(limit_per_condition=args.limit)
     out_path = save_results(results)
 
+    # I remove the in-progress file once the full run completes cleanly,
+    # since the final results file now has everything.
+    in_progress_path = RESULTS_DIR / "eval_run_results_in_progress.json"
+    if in_progress_path.exists():
+        in_progress_path.unlink()
+
+    total_cost = sum(r["total_cost_usd"] for r in results)
     print(f"\nSaved {len(results)} results to {out_path}")
+    print(f"Total eval cost: ${total_cost:.2f}")
